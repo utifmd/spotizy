@@ -136,7 +136,7 @@ class App extends Component {
   }
   render() {
     let getState = this.state, 
-        getUsr = getState.serverData.user;
+        getUsr = getState.serverData.user
 
     let getPlToRender = getUsr && getUsr.playlists.filter(item =>
       item.name.toLowerCase().includes(
