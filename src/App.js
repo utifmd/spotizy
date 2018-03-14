@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+import queryString from 'query-string';
+import https from 'https';
 import logo from './logo.svg';
 import './App.css';
 
@@ -110,6 +112,7 @@ class PlContainer extends Component {
 
     return(
       <div className = "App-playlist">
+        <img className="cover-playlist" src={getPlaylists.img_url} alt=""/>
         <h3>{getPlaylists.name}</h3>
         {
           getPlaylists.songs.map(song =>
@@ -125,28 +128,66 @@ class App extends Component {
   constructor(){
     super()
     this.state = {
-      serverData: {},
-      stringFilter: ''
+      stringFilter: '' //serverData: {}, // user: {}, // playlists: {},
     }
   }
   componentDidMount(){
-    setTimeout(() => {
-      this.setState({serverData: dataJson})
-    }, 1000);
+    let parsed = queryString.parse(window.location.search),
+        accessToken = parsed.access_token,
+        spotifyIcon = 'https://www.scdn.co/i/_global/favicon.png';
+
+    const options = {
+      headers : {
+        'Authorization': 'Bearer '+ accessToken
+      }
+    }
+
+    fetch('https://api.spotify.com/v1/me', options)
+      .then(resp => resp.json()).then(data => this.setState({
+        user: {
+          uid: data.id,
+          name: data.display_name,
+          email: data.email,
+          country: data.country
+        }
+      })
+    ).catch(error => console.log('Buka dengan spotify'));
+
+    fetch('https://api.spotify.com/v1/me/playlists', options)
+      .then(resp => resp.json()).then(data => this.setState({
+          playlists: data.items.map(item => { console.log(item)
+            return{
+              pid: item.id,
+              name: item.name,
+              img_url: item.images[0] ? item.images[0].url : spotifyIcon,
+              songs: []
+            }
+          }
+        )
+      })
+    ).catch(error => console.log('Buka dengan spotify'));
+
+    // setTimeout(() => {
+    //   this.setState({serverData: dataJson})
+    // }, 1000);
   }
   render() {
     let getState = this.state, 
-        getUsr = getState.serverData.user
+        getUsr = getState.user,
+        getPls = getState.playlists
+        //getUsr = getState.serverData.user
 
-    let getPlToRender = getUsr && getUsr.playlists.filter(item =>
-      item.name.toLowerCase().includes(
-        this.state.stringFilter.toLowerCase()
+    let getPlToRender = getUsr && getPls
+    ? getPls.filter(item =>
+        item.name.toLowerCase().includes(
+          this.state.stringFilter.toLowerCase()
+        )
       )
-    )
+    : []
 
     return (
-      <div className="App">{ getUsr ? 
-          <div>
+      <div className="App">{ getUsr && getPls
+        ? <div>
             <h1>{getUsr.name}'s Playlists</h1>
             <Filter txt_filter = { text => 
               this.setState({stringFilter: text})
@@ -158,8 +199,10 @@ class App extends Component {
                 <PlContainer list = {items} />
               )
             }
-
-          </div> : <h1>Loading..</h1> } 
+          </div> 
+        : <button className="Btn-login-spotify" onClick={()=>
+            window.location= 'http://localhost:8888/login'
+          }>Open using Spotify</button> } 
       </div>
     );
   }

@@ -37,9 +37,9 @@ h1 {
 }
 
 .App-playlist {
+  margin: 10px;
   width: 25%;
   display: inline-block;
-  text-align: start;
 }
 
 .App-text-box{
@@ -47,7 +47,17 @@ line-height: 2em;
   text-indent: 10px;
   border: 2px #000000 solid;
 }
-
+.Btn-login-spotify{
+  font-size: 24px;
+  padding: 20px;
+  margin: 5em;
+}
+.cover-playlist{
+  width: 160px;
+  height: 160px;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
 li {
   list-style-type: none;
  }
