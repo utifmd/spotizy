@@ -1,71 +1,11 @@
 import React, { Component } from 'react';
 import queryString from 'query-string';
-import https from 'https';
-import logo from './logo.svg';
+//import logo from './logo.svg';
 import './App.css';
-
-let dataJson = {
-  user: {
-    name: 'Khalid',
-    playlists: [
-      {
-        name: 'My favorites',
-        songs: [
-          {
-            name: 'Bulughul haram',
-            duration: 1345
-          },
-          {
-            name: 'Minhajil muslim',
-            duration: 1232
-          },
-          {
-            name: 'Dosa besar',
-            duration: 1000
-          }
-        ]
-      },
-      {
-        name: 'Discover weekly',
-        songs: [
-          {
-            name: 'Tingkatan zina', 
-            duration: 1322
-          },
-          {
-            name: 'Riyadushalihin', 
-            duration: 2000
-          },
-          {
-            name: 'Indahnya menjalin hubungan dgn sang pencipta',
-            duration: 1022
-          }
-        ]
-      },
-      {
-        name: 'Daily mix',
-        songs: [
-          {
-            name: 'Mutiara musibah & cobaan', 
-            duration: 1322
-          },
-          {
-            name: 'Kitab tauhid',
-            duration: 1324
-          },
-          {
-            name:  'Sirah Nabawiyah',
-            duration: 1333
-          }
-        ]
-      }
-    ]
-  }
-}
 
 class PlCounter extends Component{
   render(){
-    let getPlCounter = this.props.pl_counter;
+    let getPlCounter = this.props.value;
     return(
       <div className = "App-counter">
         <h2>{getPlCounter.length} Playlists</h2>
@@ -76,7 +16,7 @@ class PlCounter extends Component{
 
 class DurCounter extends Component{
   render(){
-    let getDuration = this.props.dur_counter.reduce((songs, eachPlaylist) => {
+    let getDuration = this.props.value.reduce((songs, eachPlaylist) => {
       return songs.concat(eachPlaylist.songs)
     }, [])
 
@@ -99,7 +39,7 @@ class Filter extends Component{
     return(
       <div>
         <input type="text" className= "App-text-box" onKeyUp = {event =>
-          this.props.txt_filter(event.target.value)
+          this.props.value(event.target.value)
         }/>
       </div>
     )
@@ -108,15 +48,15 @@ class Filter extends Component{
 
 class PlContainer extends Component {
   render(){
-    let getPlaylists = this.props.list
+    let getPlaylists = this.props.value
 
     return(
       <div className = "App-playlist">
         <img className="cover-playlist" src={getPlaylists.img_url} alt=""/>
         <h3>{getPlaylists.name}</h3>
         {
-          getPlaylists.songs.map(song =>
-            <li>{song.name}</li>
+          getPlaylists.songs.slice(0, 3).map(song =>
+            <li >{song.pid}</li>
           )
         }
       </div>
@@ -154,18 +94,40 @@ class App extends Component {
     ).catch(error => console.log('Buka dengan spotify'));
 
     fetch('https://api.spotify.com/v1/me/playlists', options)
-      .then(resp => resp.json()).then(data => this.setState({
-          playlists: data.items.map(item => { console.log(item)
-            return{
-              pid: item.id,
-              name: item.name,
-              img_url: item.images[0] ? item.images[0].url : spotifyIcon,
-              songs: []
-            }
-          }
-        )
+      .then(resp => resp.json())
+      .then(playlistsData => {
+        let getPlaylists = playlistsData.items
+        let mPromises = getPlaylists.map(playlist => {
+              let reqPromise = fetch(playlist.tracks.href, options)
+              let gotPromise = reqPromise.then(resp => resp.json())
+              return gotPromise
+            })
+        let getPromise = Promise.all(mPromises)
+        let mPlaylists = getPromise.then(trackData => {
+          trackData.forEach((trackItem, i) => {
+            getPlaylists[i].trackData = trackItem.items.map(item => item.track)
+          })
+          return getPlaylists
+        })
+        return mPlaylists
       })
-    ).catch(error => console.log('Buka dengan spotify'));
+      .then(playlistsData => {
+          this.setState({
+            playlists: playlistsData.map(item => { //console.log(item)
+              return{
+                pid: item.id,
+                name: item.name,
+                img_url: item.images[0] ? item.images[0].url : spotifyIcon,
+                songs: item.trackData.map(data =>({
+                  name: data.name,
+                  duration: data.duration_ms / 1000
+                }))
+              }
+            }
+          )
+        })
+      }
+    ).catch(error => console.log(error));
 
     // setTimeout(() => {
     //   this.setState({serverData: dataJson})
@@ -178,10 +140,17 @@ class App extends Component {
         //getUsr = getState.serverData.user
 
     let getPlToRender = getUsr && getPls
-    ? getPls.filter(item =>
-        item.name.toLowerCase().includes(
-          this.state.stringFilter.toLowerCase()
+    ? getPls.filter(playItem =>{
+        let matchPlaylist = playItem.name.toLowerCase().includes(
+            this.state.stringFilter.toLowerCase()
+          )
+        let matchSong = playItem.songs.find(songItem => 
+          songItem.name.toLowerCase().includes(
+            this.state.stringFilter.toLowerCase()
+          )
         )
+        return matchPlaylist || matchSong
+        }
       )
     : []
 
@@ -189,14 +158,14 @@ class App extends Component {
       <div className="App">{ getUsr && getPls
         ? <div>
             <h1>{getUsr.name}'s Playlists</h1>
-            <Filter txt_filter = { text => 
+            <Filter value = { text => 
               this.setState({stringFilter: text})
             } />
-            <PlCounter pl_counter = {getPlToRender} />
-            <DurCounter dur_counter = {getPlToRender} />
+            <PlCounter value = {getPlToRender} />
+            <DurCounter value = {getPlToRender} />
             {
-              getPlToRender.map(items => 
-                <PlContainer list = {items} />
+              getPlToRender.map((items, index) => //console.log(items)
+                <PlContainer key={items.pid} value={items} />
               )
             }
           </div> 
