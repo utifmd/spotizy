@@ -55,8 +55,8 @@ class PlContainer extends Component {
         <img className="cover-playlist" src={getPlaylists.img_url} alt=""/>
         <h3>{getPlaylists.name}</h3>
         {
-          getPlaylists.songs.slice(0, 3).map(song =>
-            <li >{song.pid}</li>
+          getPlaylists.songs.slice(0, 3).map((song, id) =>
+            <li key={id}>{song.name}</li>
           )
         }
       </div>
@@ -142,11 +142,11 @@ class App extends Component {
     let getPlToRender = getUsr && getPls
     ? getPls.filter(playItem =>{
         let matchPlaylist = playItem.name.toLowerCase().includes(
-            this.state.stringFilter.toLowerCase()
+            getState.stringFilter.toLowerCase()
           )
-        let matchSong = playItem.songs.find(songItem => 
+        let matchSong = getUsr && playItem.songs.find(songItem => 
           songItem.name.toLowerCase().includes(
-            this.state.stringFilter.toLowerCase()
+            getState.stringFilter.toLowerCase()
           )
         )
         return matchPlaylist || matchSong
@@ -164,8 +164,8 @@ class App extends Component {
             <PlCounter value = {getPlToRender} />
             <DurCounter value = {getPlToRender} />
             {
-              getPlToRender.map((items, index) => //console.log(items)
-                <PlContainer key={items.pid} value={items} />
+              getPlToRender.map((items, id) => //console.log(items)
+                <PlContainer key={id} value={items} />
               )
             }
           </div> 
