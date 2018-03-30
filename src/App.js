@@ -64,7 +64,7 @@ class PlContainer extends Component {
   }
 }
 
-class App extends Component {
+class App extends Component { 
   constructor(){
     super()
     this.state = {
@@ -144,7 +144,7 @@ class App extends Component {
         let matchPlaylist = playItem.name.toLowerCase().includes(
             getState.stringFilter.toLowerCase()
           )
-        let matchSong = getUsr && playItem.songs.find(songItem => 
+        let matchSong = (playItem.songs).find(songItem => 
           songItem.name.toLowerCase().includes(
             getState.stringFilter.toLowerCase()
           )
